@@ -20,12 +20,13 @@ BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data  
 INCLUDES	:=
+DIST		:=  CodeFetcher
 
 #---------------------------------------------------------------------------------
 # options for code generation
 #---------------------------------------------------------------------------------
 
-CFLAGS	= -g -O2 -Wall $(MACHDEP) $(INCLUDE)
+CFLAGS	= -g -O3 -Wall $(MACHDEP) $(INCLUDE)
 CXXFLAGS	=	$(CFLAGS)
 
 LDFLAGS	=	-g $(MACHDEP) -Wl,-Map,$(notdir $@).map
@@ -109,6 +110,9 @@ clean:
 run:$(BUILD)
 	wiiload $(TARGET).dol
 
+dist:$(BUILD)
+	@cp $(OUTPUT).elf $(DIST)/boot.elf
+	zip -r $(DIST) $(DIST)
 
 #---------------------------------------------------------------------------------
 else

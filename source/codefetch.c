@@ -3,7 +3,6 @@
 #include <string.h>
 #include <network.h>
 #include <fat.h>
-#include <dirent.h>
 
 #include <wiiuse/wpad.h>
 

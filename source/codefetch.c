@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <network.h>
+#include <fat.h>
+#include <dirent.h>
 
 #include <wiiuse/wpad.h>
 
@@ -30,10 +32,11 @@ static char id[10];
 
 const static char SERVER[] = "www.geckocodes.org";
 const static int PORT = 80;
-const static char REQUEST[] = "GET /txt.php?txt=%s HTTP/1.0\
-\
-";
-const static int REQ_LEN = 30;
+const static char REQUEST[] = "GET /txt.php?txt=%s HTTP/1.0\n\
+Host: www.geckocodes.org\n\
+Accept: */*\n\
+\n";
+const static char RESP_OK[] = "HTTP/1.1 200 OK";
 
 void download_code(){
 	//clear screen
@@ -50,7 +53,7 @@ void download_code(){
 	if(ret>=0) {
 		printf("network configured, ip: %s\n",localip);
 	} else {
-		fprintf(stdout,"Network failed. Quitting...");
+		printf("Network failed. Quitting...");
 		exit(0);
 	}
 	printf("\nDownloading codes for %s...\n",id);
@@ -86,7 +89,6 @@ void download_code(){
 	char buff[512];
 	sprintf(buff,REQUEST,id);
 	int bufflen = strlen(buff);
-	printf("Writing... \"%s\"\n",buff);
 	ret = net_send(sock,buff,bufflen,0);
 	if(ret < 0){
 		printf("Write failed!\n");
@@ -94,20 +96,48 @@ void download_code(){
 		exit(0);
 	}
 
-	ret = net_recv(sock,&buff,512,0);
-	if(ret < 0){
-		printf("Error: %s\n",strerror(ret));
-		printf("Read failed! \n");
-		net_close(sock);
-		exit(0);
-	} else if(ret == 0){
-		printf("Server closed!\n");
-		net_close(sock);
+	char codebuff[20];
+	int okaylen = strlen(RESP_OK);
+	ret = net_recv(sock,codebuff,okaylen,0);
+	if(strncmp(codebuff,RESP_OK,okaylen)!=0){
+		printf("Could not find any codes for %s!\n",id);
+	//	printf("Server responded with \"%s\"\n",codebuff);
+		return;
+	}
+
+	char filename[50];
+	sprintf(filename,"/txtcodes/%s.txt",id);
+	printf("Found codes! Downloading to %s...\n",filename);
+
+	if(!fatInitDefault()){
+		printf("Initialize Filesystem failed!\n");
 		exit(0);
 	}
-	printf("Read suceeded! Data:%s\n",buff);
+	FILE* f = fopen(filename,"w");
+	
+	int output = FALSE;
+	while((ret = net_recv(sock,&buff,512,0))>0){
+		char* body;
+		if (output){
+			fprintf(f,"%.*s",ret,buff);
+		} else {
+			body = strstr(buff,"\r\n\r\n");
+		}
+		if (!output && body){
+			output = TRUE;
+			fprintf(f,"%.*s",ret,body);
+		}
+	}
+	if(ret < 0){
+		printf("Read failed! \n");
+		fclose(f);
+		net_close(sock);
+		exit(0);
+	} 
+	fclose(f);
 	net_close(sock);
-	printf("Done downloading codes!\n");
+	printf("\nDone downloading codes!\n");
+	return;	
 //	exit(0);
 }
 
@@ -200,6 +230,7 @@ int main(int argc, char** argv){
 	printf("It ain't pretty!\n\n");
 
 	printf("Press any key to type in a game ID\n");
+	printf("Press HOME to quit\n");
 
 	int typing = FALSE;
 
@@ -279,15 +310,40 @@ int main(int argc, char** argv){
 			}
 		} else if(buttonsDown & WPAD_BUTTON_1){
 			if(typing){
+				typing = FALSE;
 				printf("\033[%d;%dH",SCREEN_BOT-10,SCREEN_LEFT+idlen+1);
 				printf("\n\n");
-				printf("Submitting ID:%s...\n",id);
 				download_code();
+
+				//clear screen, and restart
+				printf("Press any key to continue...\n");
+				int waiting = TRUE;
+				while(waiting){
+					VIDEO_WaitVSync();
+					WPAD_ScanPads();
+
+					int buttonsDown = WPAD_ButtonsDown(0);
+					if(buttonsDown){
+						waiting = FALSE;
+					}
+				}
+
+				strcpy(id,"\0");
+				idlen = 0;
+				printf("\033[2J");
+				printf("\n\n");
+				printf("Use DPAD to move around, press A to type a letter, B to backspace, 1 to submit\n");
+				draw_keyboard();
+				//goto 'A'
+				printf("\033[u");
+				//move down 1
+				printf("\033[1B");
+				//print underscore
+				printf("^");
+				typing = TRUE;
 			}
 		}
-
 	}
-
 }
 
 void* initialise() {

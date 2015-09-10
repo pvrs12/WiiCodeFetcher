@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1.0">
+	<name>Code Fetcher</name>
+	<version>1.0.0</version>
+        <release_date>20150910000000</release_date>
+	<coder>Etag</coder>
+	<short_description>Downloads WiiRD codes</short_description>
+	<long_description>Downloads WiiRD codes from www.geckocodes.org</long_description>
+</app>

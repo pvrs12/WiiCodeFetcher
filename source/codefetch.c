@@ -225,7 +225,7 @@ void draw_keyboard_pos(int topRow, int topCol){
 int main(int argc, char** argv){
 	xfb = initialise();
 	
-	printf("\n\n\nPatrick's Code Fetcher!\n");
+	printf("\n\n\nEtag's Code Fetcher!\n");
 	printf("It ain't pretty!\n\n");
 
 	printf("Press any key to type in a game ID\n");

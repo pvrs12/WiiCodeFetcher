@@ -3,6 +3,7 @@
 #include <string.h>
 #include <network.h>
 #include <fat.h>
+#include <dirent.h>
 
 #include <wiiuse/wpad.h>
 
@@ -104,14 +105,20 @@ void download_code(){
 		return;
 	}
 
+	char foldername[20] = "/txtcodes";
 	char filename[50];
-	sprintf(filename,"/txtcodes/%s.txt",id);
+	sprintf(filename,"%s/%s.txt",foldername,id);
 	printf("Found codes! Downloading to %s...\n",filename);
 
 	if(!fatInitDefault()){
 		printf("Initialize Filesystem failed!\n");
 		exit(0);
 	}
+	
+	if(mkdir(foldername,0777)==0){
+		printf("Folder %s didn't exist, so it has been created.\n",foldername);
+	}
+	
 	FILE* f = fopen(filename,"w");
 	
 	int output = FALSE;
